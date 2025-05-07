@@ -7,6 +7,7 @@ import 'join_classroom.dart';
 import 'classroom_detail.dart';
 import '../../widgets/classroom_card.dart';
 import '../../services/auth_service.dart';
+import '../../utils/app_theme.dart';
 
 class StudentHome extends StatelessWidget {
   const StudentHome({super.key});
@@ -14,102 +15,107 @@ class StudentHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserModel?>(context);
-    if (user == null) return Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (user == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        title: Text(
+        backgroundColor: Colors.white,
+        title: const Text(
           'My Classrooms',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout, color: Colors.black87),
+            icon: const Icon(Icons.logout, color: AppTheme.secondaryColor),
             onPressed: () => Provider.of<AuthService>(context, listen: false).signOut(),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => JoinClassroom()),
-          );
-        },
-        icon: Icon(Icons.add),
-        label: Text('Join Class'),
-        backgroundColor: Colors.blue.shade700,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade50, Colors.white],
-          ),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const JoinClassroom()),
         ),
-        child: StreamBuilder<List<Classroom>>(
-          stream: ClassroomService().getStudentClassrooms(user.uid),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
+        backgroundColor: AppTheme.primaryColor,
+        icon: const Icon(Icons.add),
+        label: const Text('Join Class'),
+      ),
+      body: StreamBuilder<List<Classroom>>(
+        stream: ClassroomService().getStudentClassrooms(user.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
 
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.school_outlined,
-                      size: 80,
-                      color: Colors.grey.shade400,
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.school_outlined,
+                    size: 100,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'No Classrooms Yet',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
                     ),
-                    SizedBox(height: 16),
-                    Text(
-                      'No classrooms yet',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade700,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Join your first classroom using a code!',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Join a classroom using a code!',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    style: AppTheme.buttonStyle,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const JoinClassroom()),
                     ),
-                  ],
+                    icon: const Icon(Icons.add),
+                    label: const Text('Join Classroom'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              final classroom = snapshot.data![index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: AppTheme.cardDecoration,
+                child: ClassroomCard(
+                  classroom: classroom,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => StudentClassroomDetail(classroom: classroom),
+                    ),
+                  ),
                 ),
               );
-            }
-
-            return ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final classroom = snapshot.data![index];
-                return ClassroomCard(
-                  classroom: classroom,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StudentClassroomDetail(
-                          classroom: classroom,
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            );
-          },
-        ),
+            },
+          );
+        },
       ),
     );
   }

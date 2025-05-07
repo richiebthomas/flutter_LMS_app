@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import '../../services/storage_service.dart';
 import '../../services/classroom_service.dart';
+import '../../utils/app_theme.dart';
 
 class AssignmentUploadScreen extends StatefulWidget {
   final String classroomId;
@@ -103,87 +104,209 @@ class _AssignmentUploadScreenState extends State<AssignmentUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Create Assignment')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // Title field
-              TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(labelText: 'Assignment Title'),
-                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
-              ),
-              
-              // Instructions field
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _instructionsController,
-                decoration: InputDecoration(labelText: 'Instructions'),
-                maxLines: 3,
-              ),
-              
-              // Due date picker
-              SizedBox(height: 16),
-              ListTile(
-                title: Text('Due Date'),
-                subtitle: Text(_dueDate == null 
-                    ? 'Not set (default: 7 days from now)'
-                    : DateFormat('MMM dd, yyyy').format(_dueDate!)),
-                trailing: Icon(Icons.calendar_today),
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now().add(Duration(days: 7)),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(Duration(days: 365)),
-                  );
-                  if (date != null) setState(() => _dueDate = date);
-                },
-              ),
-              
-              // File picker section
-              SizedBox(height: 16),
-              Text('Assignment File:', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: _pickInstructionFile,
-                child: Text(_instructionFile == null 
-                    ? 'Select File (PDF, DOC, PPT)' 
-                    : 'Selected: ${_instructionFile!.name}'),
-              ),
-              
-              // File info and errors
-              if (_instructionFile != null) ...[
-                SizedBox(height: 8),
-                Text(
-                  'Size: ${(_instructionFile!.size / 1024).toStringAsFixed(2)} KB',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-              if (_errorMessage.isNotEmpty) ...[
-                SizedBox(height: 8),
-                Text(
-                  _errorMessage,
-                  style: TextStyle(color: Colors.red),
-                ),
-              ],
-              
-              // Submit button
-              SizedBox(height: 24),
-              _isUploading
-                  ? Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                      onPressed: _submit,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 50),
-                      ),
-                      child: Text('Create Assignment'),
-                    ),
-            ],
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Create Assignment',
+          style: TextStyle(
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.bold,
           ),
+        ),
+        iconTheme: const IconThemeData(color: AppTheme.secondaryColor),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 5,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: AppTheme.inputDecoration.copyWith(
+                        labelText: 'Assignment Title',
+                        prefixIcon: const Icon(Icons.title),
+                      ),
+                      validator: (value) => value?.isEmpty ?? true 
+                          ? 'Title is required' 
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _instructionsController,
+                      decoration: AppTheme.inputDecoration.copyWith(
+                        labelText: 'Instructions',
+                        prefixIcon: const Icon(Icons.description),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 24),
+                    InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 7)),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null) setState(() => _dueDate = date);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today,
+                              color: AppTheme.primaryColor,
+                            ),
+                            const SizedBox(width: 16),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Due Date',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                                Text(
+                                  _dueDate == null
+                                      ? 'Not set (default: 7 days from now)'
+                                      : DateFormat('MMM dd, yyyy').format(_dueDate!),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Assignment File',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.secondaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: _pickInstructionFile,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.upload_file,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _instructionFile?.name ?? 'Select File',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (_instructionFile != null)
+                                  Text(
+                                    'Size: ${(_instructionFile!.size / 1024).toStringAsFixed(2)} KB',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_errorMessage.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        _errorMessage,
+                        style: TextStyle(
+                          color: Colors.red.shade400,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: _isUploading
+                        ? const Center(child: CircularProgressIndicator())
+                        : ElevatedButton(
+                            onPressed: _submit,
+                            style: AppTheme.buttonStyle,
+                            child: const Text(
+                              'Create Assignment',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

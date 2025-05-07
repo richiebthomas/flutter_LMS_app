@@ -3,6 +3,7 @@ import 'package:open_filex/open_filex.dart';
 import '../../services/storage_service.dart';
 import '../../services/classroom_service.dart';
 import 'assignment_submission_screen.dart';
+import '../../utils/app_theme.dart';
 
 class AssignmentsListScreen extends StatelessWidget {
   final String classroomId;
@@ -19,55 +20,97 @@ class AssignmentsListScreen extends StatelessWidget {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _classroomService.getAssignments(classroomId),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final assignments = snapshot.data!;
-        if (assignments.isEmpty) {
-          return const Center(child: Text('No assignments available'));
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.assignment_outlined,
+                  size: 80,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No Assignments Yet',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         return ListView.builder(
-          itemCount: assignments.length,
+          padding: const EdgeInsets.all(16),
+          itemCount: snapshot.data!.length,
           itemBuilder: (context, index) {
-            final assignment = assignments[index];
-            return Card(
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            final assignment = snapshot.data![index];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: AppTheme.cardDecoration,
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.assignment),
-                    title: Text(assignment['title'] ?? 'Untitled'),
-                    subtitle: Text('Due: ${assignment['formattedDate'] ?? 'No due date'}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.assignment,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    title: Text(
+                      assignment['title'] ?? 'Untitled',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Due: ${assignment['formattedDate'] ?? 'No due date'}',
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.download),
+                        TextButton.icon(
                           onPressed: () => _downloadAndOpenFile(
                             context,
                             assignment['fileUrl'],
                           ),
+                          icon: const Icon(Icons.download),
+                          label: const Text('Instructions'),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.upload),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AssignmentSubmissionScreen(
-                                  assignmentId: assignment['id'],
-                                  assignmentTitle: assignment['title'],
-                                  classroomId: classroomId,
-                                ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          style: AppTheme.buttonStyle,
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AssignmentSubmissionScreen(
+                                assignmentId: assignment['id'],
+                                assignmentTitle: assignment['title'],
+                                classroomId: classroomId,
                               ),
-                            );
-                          },
+                            ),
+                          ),
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Submit'),
                         ),
                       ],
                     ),

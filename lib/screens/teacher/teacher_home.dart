@@ -4,6 +4,7 @@ import '../../models/user_model.dart';
 import '../../models/classroom_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/classroom_service.dart';
+import '../../utils/app_theme.dart';
 import 'create_classroom.dart';
 import 'classroom_detail.dart';
 
@@ -13,60 +14,86 @@ class TeacherHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserModel?>(context);
-    final authService = Provider.of<AuthService>(context, listen: false);
-
-    if (user == null) {
-      return Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
+    
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        title: Text(
+        backgroundColor: Colors.white,
+        title: const Text(
           'My Classrooms',
           style: TextStyle(
-            color: Colors.black87,
+            color: AppTheme.primaryColor,
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.black87),
-            onPressed: () async {
-              await authService.signOut();
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: AppTheme.secondaryColor),
+            onSelected: (value) {
+              if (value == 'logout') {
+                Provider.of<AuthService>(context, listen: false).signOut();
+              }
             },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: AppTheme.secondaryColor),
+                    SizedBox(width: 8),
+                    Text('Logout'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => CreateClassroom()),
-          );
-        },
-        icon: Icon(Icons.add),
-        label: Text('Create Class'),
-        backgroundColor: Colors.blue.shade700,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => CreateClassroom()),
+        ),
+        backgroundColor: AppTheme.primaryColor,
+        icon: const Icon(Icons.add),
+        label: const Text('Create Class'),
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade50, Colors.white],
+            colors: [AppTheme.backgroundColor, Colors.white],
           ),
         ),
         child: StreamBuilder<List<Classroom>>(
-          stream: ClassroomService().getTeacherClassrooms(user.uid),
+          stream: ClassroomService().getTeacherClassrooms(user?.uid ?? ''),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             }
 
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                    SizedBox(height: 16),
+                    Text(
+                      'Error loading classrooms',
+                      style: TextStyle(color: Colors.red.shade300),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final classrooms = snapshot.data ?? [];
+
+            if (classrooms.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -76,21 +103,32 @@ class TeacherHome extends StatelessWidget {
                       size: 80,
                       color: Colors.grey.shade400,
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 24),
                     Text(
-                      'No classrooms yet',
+                      'No Classrooms Yet',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade700,
+                        color: Colors.grey.shade800,
                       ),
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Create your first classroom!',
+                      'Create your first classroom to get started!',
                       style: TextStyle(
+                        fontSize: 16,
                         color: Colors.grey.shade600,
                       ),
+                    ),
+                    SizedBox(height: 32),
+                    ElevatedButton.icon(
+                      style: AppTheme.buttonStyle,
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => CreateClassroom()),
+                      ),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create Classroom'),
                     ),
                   ],
                 ),
@@ -98,116 +136,44 @@ class TeacherHome extends StatelessWidget {
             }
 
             return ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: snapshot.data!.length,
+              padding: const EdgeInsets.all(16),
+              itemCount: classrooms.length,
               itemBuilder: (context, index) {
-                final classroom = snapshot.data![index];
-                return Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  margin: EdgeInsets.only(bottom: 16),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TeacherClassroomDetail(
-                            classroom: classroom,
-                          ),
+                final classroom = classrooms[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: AppTheme.cardDecoration,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                      child: Text(
+                        classroom.name[0].toUpperCase(),
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.class_,
-                                  color: Colors.blue.shade700,
-                                  size: 24,
-                                ),
-                              ),
-                              SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      classroom.name,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    if (classroom.description.isNotEmpty) ...[
-                                      SizedBox(height: 4),
-                                      Text(
-                                        classroom.description,
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 14,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.people_outline,
-                                    size: 16,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    '${classroom.students.length} students',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  'Code: ${classroom.code}',
-                                  style: TextStyle(
-                                    color: Colors.blue.shade700,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      ),
+                    ),
+                    title: Text(
+                      classroom.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Code: ${classroom.code}',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ),
+                    trailing: Icon(Icons.chevron_right, color: AppTheme.secondaryColor),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TeacherClassroomDetail(classroom: classroom),
                       ),
                     ),
                   ),
